@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>국방예산 대시보드</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="hd">
+    <div class="hd-l">
+      <div class="eyebrow"><span class="bar"></span>예산 데이터 대시보드</div>
+      <h1 id="title">국방예산 분야별·신규사업 대시보드</h1>
+      <p class="meta" id="meta">파일을 불러오면 분야별·신규사업별로 자동 집계합니다.</p>
+    </div>
+    <div class="hd-r">
+      <label class="drop" id="drop" tabindex="0">
+        <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        <span><b>엑셀·CSV 파일 선택</b><small>또는 이곳에 끌어다 놓기 (.xlsx · .xls · .csv)</small></span>
+      </label>
+      <div class="hd-actions">
+        <select id="sheet" hidden aria-label="시트 선택"></select>
+        <button class="btn ghost" id="btn-sample" type="button">예시 데이터</button>
+        <button class="btn ghost" id="btn-export" type="button">집계 CSV 저장</button>
+        <button class="btn ghost" id="btn-print" type="button">인쇄</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="alert" id="alert" hidden></div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" class="tab on" data-tab="field" aria-selected="true">분야별</button>
+    <button role="tab" class="tab" data-tab="new" aria-selected="false">신규사업</button>
+    <button role="tab" class="tab" data-tab="all" aria-selected="false">전체 목록</button>
+  </nav>
+
+  <!-- 분야별 -->
+  <section class="panel" id="tab-field">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-h"><h2>분야별 예산 규모</h2><div class="seg" id="zoom"><button type="button" class="on" data-z="0">전체 축</button><button type="button" data-z="1">큰 분야 잘라 보기</button></div></div>
+        <div class="legend" style="margin-top:8px"><i class="sw a" style="margin-left:0"></i>전년 <i class="sw b"></i>당해 정부안</div>
+        <p class="note">분야에 속한 금액 항목(억원)을 단순 합산 — 세부 항목이 상위 항목에 포함되면 중복될 수 있습니다.</p>
+        <div class="chart" id="c-field-amt"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>분야별 증가율</h2></div>
+        <p class="note">신규사업(전년 0원)을 포함한 분야 합계 기준.</p>
+        <div class="chart" id="c-field-rate"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>분야 카드</h2><span class="hint">카드를 누르면 해당 분야 사업만 아래에 표시</span></div>
+      <div class="fcards" id="fcards"></div>
+    </div>
+    <div class="card" id="field-detail">
+      <div class="card-h"><h2 id="fd-title">분야를 선택하세요</h2><button class="btn ghost sm" id="fd-clear" hidden>선택 해제</button></div>
+      <div class="chart" id="c-field-items"></div>
+    </div>
+  </section>
+
+  <!-- 신규사업 -->
+  <section class="panel" id="tab-new" hidden>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-h"><h2>신규사업 예산 순위</h2></div>
+        <p class="note">전년 예산이 0이거나 증가율 칸이 '신규'인 사업.</p>
+        <div id="c-new-rank"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>분야별 신규 예산 비중</h2></div>
+        <div class="donut-wrap"><div class="chart" id="c-new-donut"></div><div class="dlegend" id="new-legend"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>신규사업 상세</h2></div>
+      <div class="tbl-wrap"><table class="tbl" id="t-new"></table></div>
+    </div>
+  </section>
+
+  <!-- 전체 -->
+  <section class="panel" id="tab-all" hidden>
+    <div class="card">
+      <div class="card-h"><h2>전체 사업 목록</h2>
+        <div class="tools"><input type="search" id="q" placeholder="사업명·분야·내용 검색">
+          <select id="f-field"><option value="">전체 분야</option></select>
+          <select id="f-kind"><option value="">전체</option><option value="new">신규만</option><option value="old">기존만</option></select>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table class="tbl" id="t-all"></table></div>
+    </div>
+  </section>
+
+  <footer class="ft" id="ft">
+    입력 형식: 첫 행(또는 상단 10행 이내)에 <b>분야 · 사업명 · 단위 · 전년(A) · 당해(B)</b> 열 제목이 있으면 자동 인식합니다. 증감·증가율은 A·B 값으로 다시 계산합니다.
+    <a href="template.csv" download>CSV 양식 받기</a>
+  </footer>
+</div>
+
+<div class="tip" id="tip" hidden></div>
+
+<script src="lib/xlsx.full.min.js"></script>
+<script src="sample-data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
